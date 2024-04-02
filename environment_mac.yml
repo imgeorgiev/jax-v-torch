@@ -1,0 +1,23 @@
+name: jax
+channels:
+  - pytorch
+  - defaults
+dependencies:
+  - python=3.11
+  - pytorch=2.2.2
+  - torchvision=0.17.2
+  - torchaudio=2.2.2
+  - numpy=1.26.4
+  - pandas
+  - matplotlib
+  - seaborn
+  - ipython
+  - pip
+  - pip:
+      - hydra-core
+      - tqdm
+      - wandb
+      - black
+      - ml-dtypes==0.2.0
+      - jax-metal==0.0.6
+      - flax==0.8.2
