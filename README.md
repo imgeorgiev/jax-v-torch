@@ -2,7 +2,7 @@
 
 A repository I'm using to compare JAX to PyTorch across
 
-- ease of use (1-5)
+- ease of use
 - implementation speed
 - training speed
 - breadth of community support
@@ -20,16 +20,16 @@ All measures on a completel arbitrary scale of 1-5
 
 ## Apple Silicon
 
-Tested on M1 Max with
+Tested on M1 Max. Median iteration time.
 
 ### Raw results (in seconds)
 
 | Model | PyTorch | PyTorch compiled | JAX | JAX compiled |
 | ---- | ---- | ---- | ---- | ---- |
-| Linear Regression | 0.0943 | 1.1649 | 7.3239 | 0.4568 |
+| Linear Regression | 0.00009 | 0.00013 | 0.0067 | 0.00545 |
 
 ### Relative results (unit of time)
 
 | Model | PyTorch | PyTorch compiled | JAX | JAX compiled |
 | ---- | ---- | ---- | ---- | ---- |
-| Linear Regression | 1.0 | 12.35 | 77.6660 | 4.8441 |
+| Linear Regression | 1.0 | 1.44 | 74.44 | 60.55 |

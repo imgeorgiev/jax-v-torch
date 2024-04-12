@@ -35,17 +35,23 @@ def update_jit(params, x, y, lr=0.01):
 
 
 print("JAX linear regression")
-now = time()
 params = np.array([1.0, 0.0])
+times = []
 for _ in tqdm(range(1000)):
+    now = time()
     params = update(params, xs, ys)
-print("Time taken", time() - now)
+    taken = time() - now
+    times.append(taken)
+print("JAX: Time taken", np.median(np.array(times)))
 
 now = time()
 params = np.array([1.0, 0.0])
 for _ in tqdm(range(1000)):
+    now = time()
     params = update_jit(params, xs, ys)
-print("Time taken with jit", time() - now)
+    taken = time() - now
+    times.append(taken)
+print("JAX: Time taken with jit", np.median(np.array(times)))
 
 
 class Model(torch.nn.Module):
@@ -63,22 +69,28 @@ model = Model()
 optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
 _xs = torch.tensor(xs)
 _ys = torch.tensor(ys)
-now = time()
+times = []
 for _ in tqdm(range(1000)):
+    now = time()
     optimizer.zero_grad()
     loss = torch.mean((model(_xs) - _ys) ** 2)
     loss.backward()
     optimizer.step()
-print("Time taken", time() - now)
+    taken = time() - now
+    times.append(taken)
+print("Torch: Time taken", np.median(np.array(times)))
 
 model = torch.compile(Model())
 optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
 _xs = torch.tensor(xs)
 _ys = torch.tensor(ys)
-now = time()
+times = []
 for _ in tqdm(range(1000)):
+    now = time()
     optimizer.zero_grad()
     loss = torch.mean((model(_xs) - _ys) ** 2)
     loss.backward()
     optimizer.step()
-print("Time taken jit", time() - now)
+    taken = time() - now
+    times.append(taken)
+print("Torch: Time taken jit", np.median(np.array(times)))
