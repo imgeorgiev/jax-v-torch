@@ -32,4 +32,4 @@ Tested on M1 Max. Median iteration time.
 
 | Model | PyTorch | PyTorch compiled | JAX | JAX compiled |
 | ---- | ---- | ---- | ---- | ---- |
-| Linear Regression | 1.0 | 1.44 | 74.44 | 60.55 |
+| Linear Regression | 1.0 | 1.44 | 74.44 | 60.55z |

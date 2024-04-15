@@ -1,0 +1,4 @@
+- functions can't have conditions (e.g. if/else)
+- functions shouldn't have side-effects (change of global vars) but technically can. These will be called once at first execution
+- we cannot condition on values inside functions
+- you can technically call jax.jit() inside loops but do it in such a way that JAX can find the cached compiled function and not have to recompile it all the time.
