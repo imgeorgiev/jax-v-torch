@@ -21,3 +21,5 @@ dependencies:
       - ml-dtypes==0.2.0
       - jax-metal==0.0.6
       - flax==0.8.2
+      - chardet
+      - datasets

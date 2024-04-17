@@ -1,0 +1,31 @@
+name: jax
+channels:
+  - pytorch
+  - defaults
+  - nvidia
+dependencies:
+  - python=3.11
+  - pytorch
+  # - pytorch-cuda # torch with CUDA is incompatible with JAX
+  - cuda-toolkit=12.3
+  - torchtext
+  - torchvision
+  - numpy
+  - pandas
+  - matplotlib
+  - seaborn
+  - ipython
+  - pip
+  - pip:
+      - hydra-core
+      - tqdm
+      - wandb
+      - black
+      - chardet
+      - datasets
+      # - jax==0.4.*
+      # - flax==0.8.*
+
+# Then install jax manually
+# pip install --upgrade "jax[cuda12_pip]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+# pip install flax optax
