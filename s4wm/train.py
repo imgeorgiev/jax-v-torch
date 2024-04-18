@@ -6,15 +6,15 @@ import jax
 import jax.numpy as np
 import optax
 import torch
-from flax import linen as nn
 from flax.training import checkpoints, train_state
 from omegaconf import DictConfig, OmegaConf
 from tqdm import tqdm
 from .data import Datasets
-from .ssm import BatchStackedModel, SSMLayer
+from .ssm import SSMLayer
 from .s4 import S4Layer
 from .feedforward import FeedForwardModel
 from .lstm import LSTMRecurrentModel
+from .stacked import BatchStackedModel
 from .utils import map_nested_fn, sample_image_prefix
 
 from IPython.core import ultratb
@@ -228,18 +228,18 @@ def example_train(
     )
 
     # Get model class and arguments
-    layer_cls = Models[layer]
-    model.layer.l_max = l_max
+    layer_class = Models[layer]
+    model.layer_config.l_max = l_max
 
     # Extract custom hyperparameters from model class
-    lr_layer = getattr(layer_cls, "lr", None)
+    lr_layer = getattr(layer_class, "lr", None)
 
     print(f"[*] Starting `{layer}` Training on `{dataset}` =>> Initializing...")
 
     model_cls = partial(
         BatchStackedModel,
-        layer_cls=layer_cls,
-        d_output=n_classes,
+        layer_class=layer_class,
+        output_dim=n_classes,
         classification=classification,
         **model,
     )
@@ -282,7 +282,7 @@ def example_train(
         # Save a checkpoint each epoch & handle best (test loss... not "copacetic" but ehh)
         if train.checkpoint:
             suf = f"-{train.suffix}" if train.suffix is not None else ""
-            run_id = f"checkpoints/{dataset}/{layer}-d_model={model.d_model}-lr={train.lr}-bsz={train.bsz}{suf}"
+            run_id = f"checkpoints/{dataset}/{layer}-model_dim={model.model_dim}-lr={train.lr}-bsz={train.bsz}{suf}"
             ckpt_path = checkpoints.save_checkpoint(
                 run_id,
                 state,

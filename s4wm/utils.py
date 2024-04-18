@@ -1,4 +1,7 @@
+import jax
 import jax.numpy as np
+from jax.scipy.signal import convolve
+from flax import linen as nn
 
 
 # As we're using Flax, we also write a utility function to return a default TrainState object.
@@ -143,3 +146,55 @@ def sample_image_prefix(
                 plt.close()
                 print(f"Sampled batch {j} image {k}")
     return final, final2
+
+
+def scan_SSM(Ab, Bb, Cb, u, x0):
+    """
+    Recursively goes over input `u` by calling the SSM step update L times.
+    Returns (xs, ys) where xs is the hiddent state
+    """
+
+    def step(x_k_1, u_k):
+        x_k = Ab @ x_k_1 + Bb @ u_k
+        y_k = Cb @ x_k
+        return x_k, y_k
+
+    return jax.lax.scan(step, x0, u)
+
+
+def causal_convolution(u, K, nofft=False):
+    if nofft:
+        return convolve(u, K, mode="full")[: u.shape[0]]
+    else:
+        assert K.shape[0] == u.shape[0]
+        ud = np.fft.rfft(np.pad(u, (0, K.shape[0])))
+        Kd = np.fft.rfft(np.pad(K, (0, u.shape[0])))
+        out = ud * Kd
+        return np.fft.irfft(out)[: u.shape[0]]
+
+
+def log_step_initializer(dt_min=0.001, dt_max=0.1):
+    def init(key, shape):
+        return jax.random.uniform(key, shape) * (
+            np.log(dt_max) - np.log(dt_min)
+        ) + np.log(dt_min)
+
+    return init
+
+
+def cloneLayer(layer):
+    """
+    Since each layer is a function (L,) -> (L,), here we clone the layer H times
+    and make the funciton output (L,H) -> (L,H) TODO check dimensions.
+
+    NOTE: Since we are using variable_axies={"params": 1} that means that each dimension
+    will have its own unique parameters! `split_rngs={"params": True}` is also used to
+    ensure that each layer has its own unique random number generator.
+    """
+    return nn.vmap(
+        layer,
+        in_axes=1,
+        out_axes=1,
+        variable_axes={"params": 1, "cache": 1, "prime": 1},
+        split_rngs={"params": True},
+    )

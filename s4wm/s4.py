@@ -1,19 +1,12 @@
-from functools import partial
+from time import time
 import jax
 import jax.numpy as np
 from flax import linen as nn
 from jax.nn.initializers import lecun_normal, normal
 from jax.numpy.linalg import eigh, inv, matrix_power
-from jax.scipy.signal import convolve
-from .ssm import (
-    random_SSM,
-    discretize,
-    log_step_initializer,
-    cloneLayer,
-    causal_convolution,
-    scan_SSM,
-)
-from time import time
+from .ssm import random_SSM, discretize
+from .utils import scan_SSM, causal_convolution, log_step_initializer, cloneLayer
+
 from .math import cauchy_dot, cauchy
 
 if __name__ == "__main__":
@@ -287,7 +280,7 @@ class S4Layer(nn.Module):
 
             # Flax trick to cache discrete form during decoding.
             def init_discrete():
-                return discrete_DPLR(
+                return DPLR_to_SSM(
                     self.Lambda,
                     self.P,
                     self.P,
@@ -334,21 +327,7 @@ def init_recurrence(model, params, init_x, rng):
     }
     print("Priming")
     _, prime_vars = model.apply(vars, init_x, mutable=["prime"])
-    # TODO might need to modify this to be a single dictionary
     return vars["params"], prime_vars["prime"], vars["cache"]
-
-
-def sample_checkpoint(path, model, length, rng):
-    from flax.training import checkpoints
-
-    start = np.zeros((1, length, 1), dtype=int)
-
-    print("Initializing from checkpoint", path)
-    state = checkpoints.restore_checkpoint(path, None)
-    assert "params" in state
-    params, prime, cache = init_recurrence(model, state["params"], start, rng)
-    print("Sampling output")
-    return sample(model, params, prime, cache, start, 0, length - 1, rng)
 
 
 # Factory for constant initializer in Flax

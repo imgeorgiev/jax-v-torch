@@ -3,12 +3,12 @@ layer: s4
 seed: 0
 
 model:
-  d_model: 128
+  model_dim: 128
   n_layers: 4
-  dropout: 0.0
+  dropout_rate: 0.0
   prenorm: true
   embedding: false
-  layer:
+  layer_config:
     N: 64
 
 train:

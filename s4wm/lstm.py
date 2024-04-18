@@ -5,7 +5,7 @@ import jax
 class LSTMRecurrentModel(nn.Module):
     N: int
     L: int
-    d_model: int  # model dimension
+    model_dim: int  # model dimension
 
     def setup(self):
         LSTM = nn.scan(

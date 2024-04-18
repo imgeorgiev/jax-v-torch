@@ -14,7 +14,7 @@ from tqdm import tqdm
 # **Task**: Overfit to a 8-bit quantized sin(x) from 0 - 2*Pi -- sampled 360 times.
 #
 #  @Note: The Feed-Forward model won't necessarily be able to fit this data (optimization is hard)
-#  As a sanity check, you can try running with N_CLASSES = 2 (-1, 1) and d_model = 1...
+#  As a sanity check, you can try running with N_CLASSES = 2 (-1, 1) and model_dim = 1...
 #  this is the simplest "majority rule" experiment => gets 100% test accuracy.
 #
 #  @Note: RNN & S4 *should* fit this perfectly... but needs to be verified.
@@ -28,9 +28,7 @@ def create_sin_x_dataset(n_examples=1024, bsz=128):
 
     # Tile this `n_examples` times...
     data = torch.Tensor(
-        np.tile(
-            np.expand_dims(np.expand_dims(y, -1), 0), reps=[n_examples, 1, 1]
-        )
+        np.tile(np.expand_dims(np.expand_dims(y, -1), 0), reps=[n_examples, 1, 1])
     )
 
     # Build Datasets -- Two entries to match (inputs, targets) structure
@@ -38,12 +36,8 @@ def create_sin_x_dataset(n_examples=1024, bsz=128):
     test = TensorDataset(data[:1], data[:1])
 
     # Return data loaders, with the provided batch size
-    trainloader = torch.utils.data.DataLoader(
-        train, batch_size=bsz, shuffle=True
-    )
-    testloader = torch.utils.data.DataLoader(
-        test, batch_size=bsz, shuffle=False
-    )
+    trainloader = torch.utils.data.DataLoader(train, batch_size=bsz, shuffle=True)
+    testloader = torch.utils.data.DataLoader(test, batch_size=bsz, shuffle=False)
 
     return trainloader, testloader, N_CLASSES, SEQ_LENGTH, IN_DIM
 
@@ -68,9 +62,9 @@ def create_sin_ax_b_dataset(n_examples=20000, bsz=128):
         data_key, a_rng, b_rng = jax.random.split(data_key, num=3)
 
         # Compute a, b
-        a, b = jax.random.uniform(
-            a_rng, minval=1.0, maxval=A_MAX
-        ), jax.random.uniform(b_rng, maxval=B_MAX)
+        a, b = jax.random.uniform(a_rng, minval=1.0, maxval=A_MAX), jax.random.uniform(
+            b_rng, maxval=B_MAX
+        )
         train_data.append(
             np.digitize(np.sin(a * x + b), np.linspace(-1, 1, num=N_CLASSES))
         )
@@ -81,9 +75,9 @@ def create_sin_ax_b_dataset(n_examples=20000, bsz=128):
         data_key, a_rng, b_rng = jax.random.split(data_key, num=3)
 
         # Compute a, b
-        a, b = jax.random.uniform(
-            a_rng, minval=1.0, maxval=A_MAX
-        ), jax.random.uniform(b_rng, maxval=B_MAX)
+        a, b = jax.random.uniform(a_rng, minval=1.0, maxval=A_MAX), jax.random.uniform(
+            b_rng, maxval=B_MAX
+        )
         test_data.append(
             np.digitize(np.sin(a * x + b), np.linspace(-1, 1, num=N_CLASSES))
         )
@@ -95,12 +89,8 @@ def create_sin_ax_b_dataset(n_examples=20000, bsz=128):
     test = TensorDataset(test_data, test_data)
 
     # Return data loaders, with the provided batch size
-    trainloader = torch.utils.data.DataLoader(
-        train, batch_size=bsz, shuffle=True
-    )
-    testloader = torch.utils.data.DataLoader(
-        test, batch_size=bsz, shuffle=False
-    )
+    trainloader = torch.utils.data.DataLoader(train, batch_size=bsz, shuffle=True)
+    testloader = torch.utils.data.DataLoader(test, batch_size=bsz, shuffle=False)
 
     return trainloader, testloader, N_CLASSES, SEQ_LENGTH, IN_DIM
 
@@ -117,9 +107,7 @@ def create_mnist_dataset(bsz=128):
     tf = transforms.Compose(
         [
             transforms.ToTensor(),
-            transforms.Lambda(
-                lambda x: (x.view(IN_DIM, SEQ_LENGTH).t() * 255).int()
-            ),
+            transforms.Lambda(lambda x: (x.view(IN_DIM, SEQ_LENGTH).t() * 255).int()),
         ]
     )
 
@@ -192,9 +180,7 @@ def create_quickdraw_dataset(bsz=128):
             labels.append(np.ones(len(class_data)) * i)
 
         # Create "full" dataset & labels
-        data, labels = np.concatenate(data, axis=0), np.concatenate(
-            labels, axis=0
-        )
+        data, labels = np.concatenate(data, axis=0), np.concatenate(labels, axis=0)
 
         # Save Dataset
         np.savez("data/quickdraw/data.npz", data=data, labels=labels)
@@ -212,12 +198,8 @@ def create_quickdraw_dataset(bsz=128):
     )
 
     # Return data loaders with the provided batch size
-    trainloader = torch.utils.data.DataLoader(
-        train, batch_size=bsz, shuffle=True
-    )
-    testloader = torch.utils.data.DataLoader(
-        test, batch_size=bsz, shuffle=False
-    )
+    trainloader = torch.utils.data.DataLoader(train, batch_size=bsz, shuffle=True)
+    testloader = torch.utils.data.DataLoader(test, batch_size=bsz, shuffle=False)
 
     return trainloader, testloader, N_CLASSES, SEQ_LENGTH, IN_DIM
 
@@ -254,12 +236,8 @@ def create_fsdd_dataset(bsz=128):
     train, test = fsdd.train_test_split(test_size=0.1)
 
     # Return data loaders, with the provided batch size
-    trainloader = torch.utils.data.DataLoader(
-        train, batch_size=bsz, shuffle=True
-    )
-    testloader = torch.utils.data.DataLoader(
-        test, batch_size=bsz, shuffle=False
-    )
+    trainloader = torch.utils.data.DataLoader(train, batch_size=bsz, shuffle=True)
+    testloader = torch.utils.data.DataLoader(test, batch_size=bsz, shuffle=False)
 
     return trainloader, testloader, N_CLASSES, SEQ_LENGTH, IN_DIM
 
@@ -351,12 +329,8 @@ def create_sc_dataset(bsz=128):
     waveform, label = train_set[0]
     print(waveform.shape, label)
     # Return data loaders, with the provided batch size
-    trainloader = torch.utils.data.DataLoader(
-        train_set, batch_size=bsz, shuffle=True
-    )
-    testloader = torch.utils.data.DataLoader(
-        test_set, batch_size=bsz, shuffle=False
-    )
+    trainloader = torch.utils.data.DataLoader(train_set, batch_size=bsz, shuffle=True)
+    testloader = torch.utils.data.DataLoader(test_set, batch_size=bsz, shuffle=False)
 
     return trainloader, testloader, N_CLASSES, SEQ_LENGTH, IN_DIM
 
@@ -384,12 +358,8 @@ def create_mnist_classification_dataset(bsz=128):
     )
 
     # Return data loaders, with the provided batch size
-    trainloader = torch.utils.data.DataLoader(
-        train, batch_size=bsz, shuffle=True
-    )
-    testloader = torch.utils.data.DataLoader(
-        test, batch_size=bsz, shuffle=False
-    )
+    trainloader = torch.utils.data.DataLoader(train, batch_size=bsz, shuffle=True)
+    testloader = torch.utils.data.DataLoader(test, batch_size=bsz, shuffle=False)
 
     return trainloader, testloader, N_CLASSES, SEQ_LENGTH, IN_DIM
 
@@ -404,9 +374,7 @@ def create_cifar_classification_dataset(bsz=128):
     tf = transforms.Compose(
         [
             transforms.ToTensor(),
-            transforms.Normalize(
-                (0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)
-            ),
+            transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
             transforms.Lambda(lambda x: x.view(IN_DIM, SEQ_LENGTH).t()),
         ]
     )
@@ -419,12 +387,8 @@ def create_cifar_classification_dataset(bsz=128):
     )
 
     # Return data loaders, with the provided batch size
-    trainloader = torch.utils.data.DataLoader(
-        train, batch_size=bsz, shuffle=True
-    )
-    testloader = torch.utils.data.DataLoader(
-        test, batch_size=bsz, shuffle=False
-    )
+    trainloader = torch.utils.data.DataLoader(train, batch_size=bsz, shuffle=True)
+    testloader = torch.utils.data.DataLoader(test, batch_size=bsz, shuffle=False)
 
     return trainloader, testloader, N_CLASSES, SEQ_LENGTH, IN_DIM
 
@@ -446,9 +410,7 @@ def create_fsdd_classification_dataset(bsz=128):
             TrimSilence(threshold=1e-6),
             MuLawEncoding(quantization_channels=512),
             transforms.Lambda(
-                lambda x: torch.nn.functional.pad(
-                    x, (0, 6400 - x.shape[0])
-                ).view(-1, 1)
+                lambda x: torch.nn.functional.pad(x, (0, 6400 - x.shape[0])).view(-1, 1)
             ),
         ]
     )
@@ -460,12 +422,8 @@ def create_fsdd_classification_dataset(bsz=128):
     train, test = fsdd.train_test_split(test_size=0.1)
 
     # Return data loaders, with the provided batch size
-    trainloader = torch.utils.data.DataLoader(
-        train, batch_size=bsz, shuffle=True
-    )
-    testloader = torch.utils.data.DataLoader(
-        test, batch_size=bsz, shuffle=False
-    )
+    trainloader = torch.utils.data.DataLoader(train, batch_size=bsz, shuffle=True)
+    testloader = torch.utils.data.DataLoader(test, batch_size=bsz, shuffle=False)
 
     return trainloader, testloader, N_CLASSES, SEQ_LENGTH, IN_DIM
 
@@ -539,9 +497,7 @@ def create_imdb_classification_dataset(bsz=128):
             padding_value=vocab["<pad>"],
             batch_first=True,
         )
-        batchfy_input_ids = torch.nn.functional.one_hot(
-            batchfy_input_ids[:-1], IN_DIM
-        )
+        batchfy_input_ids = torch.nn.functional.one_hot(batchfy_input_ids[:-1], IN_DIM)
         return batchfy_input_ids, batchfy_labels
 
     trainloader = torch.utils.data.DataLoader(
@@ -566,9 +522,7 @@ def create_listops_classification_dataset(bsz):
 
     #  tokenizer
     def listops_tokenizer(s):
-        return s.translate(
-            {ord("]"): ord("X"), ord("("): None, ord(")"): None}
-        ).split()
+        return s.translate({ord("]"): ord("X"), ord("("): None, ord(")"): None}).split()
 
     # step 1, load and build datasets
     dataset = load_dataset(
