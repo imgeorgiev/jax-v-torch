@@ -1,5 +1,6 @@
 import os
 import shutil
+from time import time
 from functools import partial
 import hydra
 import jax
@@ -12,7 +13,7 @@ from tqdm import tqdm
 from .data import Datasets
 from .ssm import SSMLayer
 from .s4 import S4Layer
-from .feedforward import FeedForwardModel
+from .feedforward import FeedForwardModel, FeedForwardAutoregressive
 from .lstm import LSTMRecurrentModel
 from .stacked import BatchStackedModel
 from .utils import map_nested_fn, sample_image_prefix
@@ -114,7 +115,9 @@ def train_epoch(state, rng, model, trainloader, classification=False):
     # Store Metrics
     model = model(training=True)
     batch_losses, batch_accuracies = [], []
+    batch_times = []
     for batch_idx, (inputs, labels) in enumerate(tqdm(trainloader)):
+        start = time()
         inputs = np.array(inputs.numpy())
         labels = np.array(labels.numpy())  # Not the most efficient...
         rng, drop_rng = jax.random.split(rng)
@@ -128,20 +131,23 @@ def train_epoch(state, rng, model, trainloader, classification=False):
         )
         batch_losses.append(loss)
         batch_accuracies.append(acc)
+        batch_times.append(time() - start)
 
     # Return average loss over batches
     return (
         state,
         np.mean(np.array(batch_losses)),
         np.mean(np.array(batch_accuracies)),
+        np.mean(np.array(batch_times)),
     )
 
 
 def validate(params, model, testloader, classification=False):
     # Compute average loss & accuracy
     model = model(training=False)
-    losses, accuracies = [], []
+    losses, accuracies, times = [], [], []
     for batch_idx, (inputs, labels) in enumerate(tqdm(testloader)):
+        start = time()
         inputs = np.array(inputs.numpy())
         labels = np.array(labels.numpy())  # Not the most efficient...
         loss, acc = eval_step(
@@ -149,8 +155,13 @@ def validate(params, model, testloader, classification=False):
         )
         losses.append(loss)
         accuracies.append(acc)
+        times.append(time() - start)
 
-    return np.mean(np.array(losses)), np.mean(np.array(accuracies))
+    return (
+        np.mean(np.array(losses)),
+        np.mean(np.array(accuracies)),
+        np.mean(np.array(times)),
+    )
 
 
 # We define separate step functions for running training and evaluation steps, accordingly. These step functions are
@@ -195,6 +206,7 @@ def eval_step(batch_inputs, batch_labels, params, model, classification=False):
 
 Models = {
     "ff": FeedForwardModel,
+    "ffa": FeedForwardAutoregressive,
     "lstm": LSTMRecurrentModel,
     "ssm": SSMLayer,
     "s4": S4Layer,
@@ -234,7 +246,9 @@ def example_train(
     # Extract custom hyperparameters from model class
     lr_layer = getattr(layer_class, "lr", None)
 
-    print(f"[*] Starting `{layer}` Training on `{dataset}` =>> Initializing...")
+    print(
+        f"[*] Starting `{layer}` Training on `{dataset} with L={l_max}` =>> Initializing..."
+    )
 
     model_cls = partial(
         BatchStackedModel,
@@ -257,9 +271,11 @@ def example_train(
 
     # Loop over epochs
     best_loss, best_acc, best_epoch = 10000, 0, 0
+    first_epoch = True
     for epoch in range(train.epochs):
+        epoch_start_time = time()
         print(f"[*] Starting Training Epoch {epoch + 1}...")
-        state, train_loss, train_acc = train_epoch(
+        state, train_loss, train_acc, train_time = train_epoch(
             state,
             train_rng,
             model_cls,
@@ -268,7 +284,7 @@ def example_train(
         )
 
         print(f"[*] Running Epoch {epoch + 1} Validation...")
-        test_loss, test_acc = validate(
+        test_loss, test_acc, test_time = validate(
             state.params, model_cls, testloader, classification=classification
         )
 
@@ -331,19 +347,32 @@ def example_train(
             f" {best_acc:.4f} at Epoch {best_epoch + 1}\n"
         )
 
+        epoch_time = time() - epoch_start_time
+
         if wandb is not None:
+            # don't log first epoch times since that is just compilation time
             wandb.log(
                 {
                     "train/loss": train_loss,
                     "train/accuracy": train_acc,
+                    "train/iter_time": train_time if not first_epoch else None,
+                    "train/time_per_sample": (
+                        train_time / train.bsz if not first_epoch else None
+                    ),
                     "test/loss": test_loss,
                     "test/accuracy": test_acc,
+                    "test/iter_time": test_time if not first_epoch else None,
+                    "test/time_per_sample": (
+                        train_time / train.bsz if not first_epoch else None
+                    ),
+                    "epoch_time": epoch_time if not first_epoch else None,
                 },
                 step=epoch,
             )
             wandb.run.summary["Best Test Loss"] = best_loss
             wandb.run.summary["Best Test Accuracy"] = best_acc
             wandb.run.summary["Best Epoch"] = best_epoch
+            first_epoch = False
 
 
 @hydra.main(version_base=None, config_path="", config_name="config")
